@@ -20,11 +20,16 @@ import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 
 public class CollaborativeFilteringUserRec {
 
-	public static void main(String[] args) {
-		
+	public static void main(String[] args)
+	{
+		//recommend("data/train/vod_rated.csv", "data/pred/vod_rated.csv");
+		recommend("data/train/mtvi_rated.csv", "data/pred/mtvi_rated.csv");
+	}
+	
+	public static void recommend(String traincsv, String predcsv){
 		try {
 			
-			DataModel dataModel = new FileDataModel(new File("data/train/vod_rated.csv"));
+			DataModel dataModel = new FileDataModel(new File(traincsv));
 		
 			UserSimilarity similarity = new LogLikelihoodSimilarity(dataModel);
 			//TanimotoCoefficientSimilarity similarity = new TanimotoCoefficientSimilarity(dataModel);
@@ -33,7 +38,7 @@ public class CollaborativeFilteringUserRec {
 			
 			GenericUserBasedRecommender recommender = new GenericUserBasedRecommender(dataModel, neighborhood, similarity);
 			
-			BufferedWriter bw = new BufferedWriter(new FileWriter("data/pred/vod_rated.csv"));
+			BufferedWriter bw = new BufferedWriter(new FileWriter(predcsv));
 			
 			int x = 0;
 			for(LongPrimitiveIterator users = dataModel.getUserIDs(); users.hasNext();) {
