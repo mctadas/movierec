@@ -10,7 +10,7 @@ public class Evaluate {
 	public static void main(String[] args) throws IOException {
 		evaluate("data/pred/vod_rated.csv", "data/test/vod_rated.csv");
 		evaluate("data/pred/vod_py_pred.csv", "data/test/vod_rated.csv");
-		evaluate("data/pred/mtvi_pred.csv", "data/test/mtvi_rated.csv");
+		evaluate("data/pred/mtvi_rated.csv", "data/test/mtvi_rated.csv");
 	}
 	
 	public static void evaluate(String predDataPath, String testDataPath) throws IOException
@@ -25,8 +25,9 @@ public class Evaluate {
 		String line;
 		while((line = brTest.readLine()) != null)
 		{
-			String[] els = line.split(",");			
-			testData.put(els[0]+','+els[1], Integer.parseInt(els[2]));		
+			String[] els = line.split(",");		
+			Double value = Double.parseDouble(els[2]);
+			testData.put(els[0]+','+els[1], value.intValue());		
 		}
 
 		//go through predictions to evaluate them
