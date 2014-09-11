@@ -1,5 +1,8 @@
 package lt.teo.recommender.future;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +28,8 @@ public class ContentBasedRecommender {
 	public static TreeMap<Integer, TreeMap<String, Double>> weights;
 
 	public static void main(String[] args) throws Exception {
-		loadTrainRatingsFromDBTable("IPTV_MTVI_rated_filtered_UAT");
+		//loadTrainRatingsFromDBTable("IPTV_MTVI_rated_filtered_UAT");
+		loadTrainRatingsFromFile("data/train/mtvi_rated.csv");
 
 		String featuresSql = "select top 100 tv_id as ITEM "
 				+ ",CASE WHEN [prodyear] = 0  THEN null ELSE ([prodyear]) END "
@@ -159,15 +163,39 @@ public class ContentBasedRecommender {
 			Integer i = rs.getInt(2);
 			Double r = rs.getDouble(3);
 
-			TreeMap<Integer, Double> u_i = ratings.get(u);
-			if (u_i == null){
-				u_i = new TreeMap<Integer, Double>();
-				ratings.put(u, u_i);
-				u_i = ratings.get(u);
-			}
-			u_i.put(i, r);
+			addRating(u,i,r);
 		}
 		conn.close();
+	}
+	
+	public static void loadTrainRatingsFromFile(String path) throws Exception
+	{
+		ratings = new TreeMap<Integer, TreeMap<Integer, Double>>();
+		
+		BufferedReader br = new BufferedReader(new FileReader(path));
+		String line;
+		while((line = br.readLine()) != null)
+		{
+			if(line.length()>0 &&
+			   Character.isDigit(line.charAt(0))){
+				String[] vals = line.split(",");
+				addRating(Integer.valueOf(vals[0]),
+						  Integer.valueOf(vals[1]),
+						  Double.valueOf(vals[2]));
+			}
+		}
+		br.close();
+	}
+	
+	private static void addRating(Integer u, Integer i, Double r)
+	{
+		TreeMap<Integer, Double> u_i = ratings.get(u);
+		if (u_i == null){
+			u_i = new TreeMap<Integer, Double>();
+			ratings.put(u, u_i);
+			u_i = ratings.get(u);
+		}
+		u_i.put(i, r);
 	}
 
 	public static Connection getDBConnection() throws Exception
