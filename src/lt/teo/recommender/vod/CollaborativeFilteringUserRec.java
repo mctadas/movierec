@@ -49,7 +49,7 @@ public class CollaborativeFilteringUserRec {
 		System.exit(0);
 	}
 
-	private static Path getTrainFileFromDBTable(String trainTable) throws Exception
+	public static Path getTrainFileFromDBTable(String trainTable) throws Exception
 	{
 		Connection conn = getDBConnection();
 		Statement sta = conn.createStatement();
@@ -83,7 +83,7 @@ public class CollaborativeFilteringUserRec {
 		int x = 0;
 		for(LongPrimitiveIterator users = dataModel.getUserIDs(); users.hasNext();) {
 			long userID = users.nextLong();
-			List<RecommendedItem>recommendations = recommender.recommend(userID, topN);
+			List<RecommendedItem> recommendations = recommender.recommend(userID, topN);
 
 			for(RecommendedItem recommendation : recommendations){
 				String sql = "INSERT INTO " + predcsv +" VALUES (?,?,?,?)";
@@ -99,19 +99,19 @@ public class CollaborativeFilteringUserRec {
 		}
 	}
 
-	private static java.sql.Timestamp getCurrentTimeStamp()
+	public static java.sql.Timestamp getCurrentTimeStamp()
 	{
 		java.util.Date today = new java.util.Date();
 		return new java.sql.Timestamp(today.getTime());
 	}
 	
-	private static void deleteFile(String path)
+	public static void deleteFile(String path)
 	{
 		java.io.File f = new java.io.File(path);
 		f.delete();
 	}
 	
-	private static Connection getDBConnection() throws Exception
+	public static Connection getDBConnection() throws Exception
 	{
 		String userName = "dwh";
 		String password = "vF_V8N26jCfi";
