@@ -16,7 +16,12 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
@@ -32,7 +37,7 @@ public class ContentBasedRecommender {
 	public static TreeMap<Integer, TreeMap<String, Double>> weights;
 	public static TreeMap<Integer, TreeMap<Integer, Double>> predictions;
 	public static Set<Integer> itemsToPredict;
-	
+
 	public static void main(String[] args) throws Exception {
 		//loadTrainRatingsFromDBTable("IPTV_MTVI_rated_filtered_UAT");
 		//loadItemFeaturesFromDBTable();
@@ -40,10 +45,56 @@ public class ContentBasedRecommender {
 		loadItemFeaturesFromFile("data/train/mtvi_features_uat.csv");
 		loadItemsToPredict("data/train/mtvi_items_to_predict_uat.csv");
 		computeWeights();
-		computePredictions("data/pred/future_rated_uat.csv");
+		computePredictions();
+		storeTopNPredictions(50,"data/pred/future_rated_uat.csv");
 		System.out.println("DONE");
 	}
 
+	private static void storeTopNPredictions(int nPredictions, String path) throws Exception{
+
+		BufferedWriter bw = new BufferedWriter(new FileWriter(path));
+		//iterate through users
+		for(Map.Entry<Integer, TreeMap<Integer, Double>> p_u : predictions.entrySet())
+		{
+			Integer u = p_u.getKey();
+			Map<Integer, Double> sortedMap = sortByComparator(p_u.getValue());
+			int counter = 0;
+			for(Map.Entry<Integer, Double> elements : sortedMap.entrySet())
+			{
+				counter++;
+				if(counter > nPredictions) break;
+				Integer i = elements.getKey();
+				Double p = elements.getValue();
+				bw.write(u+","+i+","+p+"\n");
+			}
+			
+		}
+		bw.close();
+	}
+
+	private static Map<Integer, Double> sortByComparator(TreeMap<Integer, Double> unsortMap) {
+		 
+		// Convert Map to List
+		List<Map.Entry<Integer, Double>> list = 
+			new LinkedList<Map.Entry<Integer, Double>>(unsortMap.entrySet());
+ 
+		// Sort list with comparator, to compare the Map values
+		Collections.sort(list, new Comparator<Map.Entry<Integer, Double>>() {
+			public int compare(Map.Entry<Integer, Double> o1,
+                                           Map.Entry<Integer, Double> o2) {
+				return (o2.getValue()).compareTo(o1.getValue());//order descending
+			}
+		});
+ 
+		// Convert sorted map back to a Map
+		Map<Integer, Double> sortedMap = new LinkedHashMap<Integer, Double>();
+		for (Iterator<Map.Entry<Integer, Double>> it = list.iterator(); it.hasNext();) {
+			Map.Entry<Integer, Double> entry = it.next();
+			sortedMap.put(entry.getKey(), entry.getValue());
+		}
+		return sortedMap;
+	}
+	
 	private static void loadItemsToPredict(String path) throws Exception {
 		itemsToPredict = new HashSet<Integer>();
 
@@ -55,22 +106,21 @@ public class ContentBasedRecommender {
 		}
 		br.close();
 	}
-	
-	private static void computePredictions(String path) throws Exception {
+
+	private static void computePredictions(){
 		System.out.println("ratings:"+ratings);
 		System.out.println("features:"+features);
 		System.out.println("weights:"+weights);
 		System.out.println("itemsToPredict:"+itemsToPredict);
-		
+
 		predictions = new TreeMap<Integer, TreeMap<Integer, Double>>();
-		BufferedWriter bw = new BufferedWriter(new FileWriter(path));
 
 		//iterate through users
 		for(Map.Entry<Integer, TreeMap<String, Double>> w_u : weights.entrySet())
 		{
 			Integer u = w_u.getKey();
 			TreeMap<String, Double> w_vector = w_u.getValue();
-			
+
 			for(Integer i: itemsToPredict)
 			{
 				//iterate features
@@ -87,7 +137,7 @@ public class ContentBasedRecommender {
 
 				}
 				double predNorm = pred /  count;
-				
+
 				//save computed prediction (u,i,p)
 				TreeMap<Integer, Double> p_u = predictions.get(u);
 				if(p_u == null){
@@ -97,15 +147,13 @@ public class ContentBasedRecommender {
 				}
 				//TODO test more accurate approach approach
 				double res = pred;
-				//double res = predNorm;
-				
+				//res = predNorm;
+
 				p_u.put(i, res);
-				bw.write(u+","+i+","+res+"\n");
 			}
-			
+
 		}
 		System.out.println("predictions:"+predictions);
-		bw.close();
 	}
 
 	private static void computeWeights() {
@@ -114,7 +162,7 @@ public class ContentBasedRecommender {
 		//iterate through users
 		for(Map.Entry<Integer, TreeMap<Integer, Double>> r_u : ratings.entrySet()) {
 			Integer u = r_u.getKey();
-			
+
 			TreeMap<String, ArrayList<Integer>> featureMatrix = new TreeMap<String, ArrayList<Integer>>();
 			TreeMap<Integer, Double> ratingMatrix = new TreeMap<Integer, Double>();
 			Set<Integer> items = new HashSet<Integer>();
@@ -178,7 +226,7 @@ public class ContentBasedRecommender {
 		{
 			String[] vals = line.split(",");
 			Integer i = Integer.valueOf(vals[0]);
-			
+
 			for(int e=1; e< vals.length; e++){
 				String str = vals[e];
 				if(str != null && !str.equals("null")){
@@ -202,7 +250,7 @@ public class ContentBasedRecommender {
 				+ ",CASE WHEN [episode] = 0   THEN null ELSE (CONVERT(varchar(20),[episode])) END "
 				+ ",CASE WHEN [prad_laikas] < 0 THEN null ELSE (CONVERT(varchar(20),[prad_laikas])) END "
 				+ "from [DWH_Darbinis].[dbo].[TV Programme]";
-		
+
 		features = new TreeMap<Integer, ArrayList<String>>();
 
 		Connection conn = getDBConnection();
