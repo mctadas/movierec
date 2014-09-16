@@ -32,26 +32,27 @@ import lt.teo.recommender.vod.CollaborativeFilteringUserRec;
 
 public class ContentBasedRecommender {
 
-	public static TreeMap<Integer, TreeMap<Integer, Double>> ratings;
-	public static TreeMap<Integer, ArrayList<String>> features;
-	public static TreeMap<Integer, TreeMap<String, Double>> weights;
-	public static TreeMap<Integer, TreeMap<Integer, Double>> predictions;
+	public static TreeMap<Integer, TreeMap<Integer, Double>> ratings; //<u,<i,r>>
+	public static TreeMap<Integer, ArrayList<String>> features; //<i,[j]>
+	public static TreeMap<Integer, TreeMap<String, Double>> weights; //<u,<j,w>>
+	public static TreeMap<Integer, TreeMap<Integer, Double>> predictions; // <u,<i,p>>
 	public static Set<Integer> itemsToPredict;
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception
+	{
 		//loadTrainRatingsFromDBTable("IPTV_MTVI_rated_filtered_UAT");
-		//loadItemFeaturesFromDBTable();
-		loadTrainRatingsFromFile("data/train/mtvi_rated_uat.csv");
-		loadItemFeaturesFromFile("data/train/mtvi_features_uat.csv");
-		loadItemsToPredict("data/train/mtvi_items_to_predict_uat.csv");
+		loadItemFeaturesFromDBTable();
+		loadTrainRatingsFromFile("data/train/mtvi_60d-rated.csv");
+		//loadItemFeaturesFromFile("data/train/mtvi_features_uat.csv");
+		loadItemsToPredict("data/train/mtvi_30d-items.csv");
+		
 		computeWeights();
-		computePredictions();
-		storeTopNPredictions(50,"data/pred/future_rated_uat.csv");
+		computePredictions(10,"data/pred/mtvi_60d-rated-top50.csv");
 		System.out.println("DONE");
 	}
 
 	private static void storeTopNPredictions(int nPredictions, String path) throws Exception{
-
+		System.out.println("storeTopNPredictions");
 		BufferedWriter bw = new BufferedWriter(new FileWriter(path));
 		//iterate through users
 		for(Map.Entry<Integer, TreeMap<Integer, Double>> p_u : predictions.entrySet())
@@ -71,7 +72,6 @@ public class ContentBasedRecommender {
 		}
 		bw.close();
 	}
-
 	private static Map<Integer, Double> sortByComparator(TreeMap<Integer, Double> unsortMap) {
 		 
 		// Convert Map to List
@@ -94,8 +94,8 @@ public class ContentBasedRecommender {
 		}
 		return sortedMap;
 	}
-	
 	private static void loadItemsToPredict(String path) throws Exception {
+		System.out.println("loadItemsToPredict");
 		itemsToPredict = new HashSet<Integer>();
 
 		BufferedReader br = new BufferedReader(new FileReader(path));
@@ -106,18 +106,21 @@ public class ContentBasedRecommender {
 		}
 		br.close();
 	}
+	private static void computePredictions(int nPredictions, String path) throws Exception{
+		System.out.println("computePredictions");
+		//System.out.println("features:"+features);
+		//System.out.println("weights:"+weights);
+		//System.out.println("itemsToPredict:"+itemsToPredict);
 
-	private static void computePredictions(){
-		System.out.println("ratings:"+ratings);
-		System.out.println("features:"+features);
-		System.out.println("weights:"+weights);
-		System.out.println("itemsToPredict:"+itemsToPredict);
-
-		predictions = new TreeMap<Integer, TreeMap<Integer, Double>>();
-
+		BufferedWriter bw = new BufferedWriter(new FileWriter(path));
+		
 		//iterate through users
+		int c = 0;
+		
 		for(Map.Entry<Integer, TreeMap<String, Double>> w_u : weights.entrySet())
 		{
+			predictions = new TreeMap<Integer, TreeMap<Integer, Double>>();
+			System.out.println(c++);
 			Integer u = w_u.getKey();
 			TreeMap<String, Double> w_vector = w_u.getValue();
 
@@ -136,8 +139,7 @@ public class ContentBasedRecommender {
 					}
 
 				}
-				double predNorm = pred /  count;
-
+				
 				//save computed prediction (u,i,p)
 				TreeMap<Integer, Double> p_u = predictions.get(u);
 				if(p_u == null){
@@ -147,16 +149,35 @@ public class ContentBasedRecommender {
 				}
 				//TODO test more accurate approach approach
 				double res = pred;
-				//res = predNorm;
-
-				p_u.put(i, res);
+				double predNorm = pred /  count;
+				
+				if(count>0){
+					//res = predNorm;
+					p_u.put(i, res);
+					//System.out.print(res);
+				}
 			}
-
+			
+			Map<Integer, Double> sortedMap = sortByComparator(predictions.get(u));
+			int counter = 0;
+			for(Map.Entry<Integer, Double> elements : sortedMap.entrySet())
+			{
+				counter++;
+				if(counter > nPredictions) break;
+				Integer i = elements.getKey();
+				Double p = elements.getValue();
+				bw.write(u+","+i+","+p+"\n");
+			}
 		}
-		System.out.println("predictions:"+predictions);
+		bw.close();
+		//System.out.println("predictions:"+predictions);
 	}
 
 	private static void computeWeights() {
+		System.out.println("computeWeights");
+		System.out.println("  >features:"+features.size());
+		System.out.println("  >ratings:"+ratings.size());
+		System.out.println("  >itemsToPredict:"+itemsToPredict.size());
 		weights = new TreeMap<Integer, TreeMap<String, Double>>();
 
 		//iterate through users
@@ -215,6 +236,7 @@ public class ContentBasedRecommender {
 			}
 
 		}
+		System.out.println("  >weights:"+weights.size());
 	}
 
 	private static void loadItemFeaturesFromFile(String path) throws Exception {
@@ -241,16 +263,20 @@ public class ContentBasedRecommender {
 
 	private static void loadItemFeaturesFromDBTable() throws Exception
 	{
-		String sql = "select top 100 tv_id as ITEM "
-				+ ",CASE WHEN [prodyear] = 0  THEN null ELSE ([prodyear]) END "
-				+ ",CASE WHEN [category] = '' THEN null ELSE ([category]) END "
-				+ ",CASE WHEN [genres] = ''   THEN null ELSE ([genres]) END "
-				+ ",CASE WHEN [audience] = '' THEN null ELSE ([audience]) END "
-				+ ",CASE WHEN [season] = 0    THEN null ELSE (CONVERT(varchar(20), [season])) END "
-				+ ",CASE WHEN [episode] = 0   THEN null ELSE (CONVERT(varchar(20),[episode])) END "
-				+ ",CASE WHEN [prad_laikas] < 0 THEN null ELSE (CONVERT(varchar(20),[prad_laikas])) END "
-				+ "from [DWH_Darbinis].[dbo].[TV Programme]";
-
+		System.out.println("loadItemFeaturesFromDBTable");
+		String sql = "select top 1000 tv_id as item "
+				+",CASE WHEN [channel_ID] = 0  THEN null ELSE ([channel_ID]) END as channelID "
+				+",CASE WHEN [category] = '' THEN null ELSE ([category]) END "
+				+",CASE WHEN [asset_id] = '' THEN null ELSE ([asset_id]) END "
+				+",CASE WHEN [series_id] = '' THEN null ELSE ([series_id]) END "
+				+",CONVERT(varchar(2),DATEPART(hh, [tv_start])) "
+				+",CONVERT(varchar(2),DATEPART(hh, [tv_end])) "
+				+"--,CASE WHEN [prodyear] = 0  THEN null ELSE ([prodyear]) END "
+				+"--,CASE WHEN [genres] = ''   THEN null ELSE ([genres]) END "
+				+"--,CASE WHEN [audience] = '' THEN null ELSE ([audience]) END "
+				+"--,CASE WHEN [season] = 0    THEN null ELSE (CONVERT(varchar(20), [season])) END "
+				+"--,CASE WHEN [episode] = 0   THEN null ELSE (CONVERT(varchar(20),[episode])) END "
+				+"from [Middleware].[dbo].[GALA_metras_TV_Programme] ";
 		features = new TreeMap<Integer, ArrayList<String>>();
 
 		Connection conn = getDBConnection();
@@ -307,6 +333,7 @@ public class ContentBasedRecommender {
 
 	public static void loadTrainRatingsFromFile(String path) throws Exception
 	{
+		System.out.println("loadTrainRatingsFromFile");
 		ratings = new TreeMap<Integer, TreeMap<Integer, Double>>();
 
 		BufferedReader br = new BufferedReader(new FileReader(path));

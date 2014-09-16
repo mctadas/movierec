@@ -9,8 +9,10 @@ public class Evaluate {
 
 	public static void main(String[] args) throws IOException {
 		evaluate("data/pred/vod_rated.csv", "data/test/vod_rated.csv");
-		evaluate("data/pred/vod_py_pred.csv", "data/test/vod_rated.csv");
+		//evaluate("data/pred/vod_py_pred.csv", "data/test/vod_rated.csv");
 		evaluate("data/pred/mtvi_rated.csv", "data/test/mtvi_rated.csv");
+		evaluate("data/pred/mtvi_30d-rated-top10.csv", "data/test/mtvi_30d-rated.csv");
+		evaluate("data/pred/mtvi_30d-rated-top10-normed.csv", "data/test/mtvi_30d-rated.csv");
 	}
 	
 	public static void evaluate(String predDataPath, String testDataPath) throws IOException
