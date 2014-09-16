@@ -264,18 +264,18 @@ public class ContentBasedRecommender {
 	private static void loadItemFeaturesFromDBTable() throws Exception
 	{
 		System.out.println("loadItemFeaturesFromDBTable");
-		String sql = "select top 1000 tv_id as item "
-				+",CASE WHEN [channel_ID] = 0  THEN null ELSE ([channel_ID]) END as channelID "
-				+",CASE WHEN [category] = '' THEN null ELSE ([category]) END "
-				+",CASE WHEN [asset_id] = '' THEN null ELSE ([asset_id]) END "
-				+",CASE WHEN [series_id] = '' THEN null ELSE ([series_id]) END "
-				+",CONVERT(varchar(2),DATEPART(hh, [tv_start])) "
-				+",CONVERT(varchar(2),DATEPART(hh, [tv_end])) "
-				+"--,CASE WHEN [prodyear] = 0  THEN null ELSE ([prodyear]) END "
-				+"--,CASE WHEN [genres] = ''   THEN null ELSE ([genres]) END "
-				+"--,CASE WHEN [audience] = '' THEN null ELSE ([audience]) END "
-				+"--,CASE WHEN [season] = 0    THEN null ELSE (CONVERT(varchar(20), [season])) END "
-				+"--,CASE WHEN [episode] = 0   THEN null ELSE (CONVERT(varchar(20),[episode])) END "
+		String sql = "select top 1000 tv_id as item \n"
+				+",CASE WHEN [channel_ID] = 0  THEN null ELSE ([channel_ID]) END as channelID \n"
+				+",CASE WHEN [category] = '' THEN null ELSE ([category]) END \n"
+				+",CASE WHEN [asset_id] = '' THEN null ELSE ([asset_id]) END \n"
+				+",CASE WHEN [series_id] = '' THEN null ELSE ([series_id]) END \n"
+				+",CONVERT(varchar(2),DATEPART(hh, [tv_start])) \n"
+				+",CONVERT(varchar(2),DATEPART(hh, [tv_end])) \n"
+				+"--,CASE WHEN [prodyear] = 0  THEN null ELSE ([prodyear]) END \n"
+				+"--,CASE WHEN [genres] = ''   THEN null ELSE ([genres]) END \n"
+				+"--,CASE WHEN [audience] = '' THEN null ELSE ([audience]) END \n"
+				+"--,CASE WHEN [season] = 0    THEN null ELSE (CONVERT(varchar(20), [season])) END \n"
+				+"--,CASE WHEN [episode] = 0   THEN null ELSE (CONVERT(varchar(20),[episode])) END \n"
 				+"from [Middleware].[dbo].[GALA_metras_TV_Programme] ";
 		features = new TreeMap<Integer, ArrayList<String>>();
 
