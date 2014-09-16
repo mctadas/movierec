@@ -42,12 +42,12 @@ public class ContentBasedRecommender {
 	{
 		//loadTrainRatingsFromDBTable("IPTV_MTVI_rated_filtered_UAT");
 		loadItemFeaturesFromDBTable();
-		loadTrainRatingsFromFile("data/train/mtvi_60d-rated.csv");
+		loadTrainRatingsFromFile("data/train/mtvi_30d-rated.csv");
 		//loadItemFeaturesFromFile("data/train/mtvi_features_uat.csv");
-		loadItemsToPredict("data/train/mtvi_30d-items.csv");
+		loadItemsToPredict("data/train/mtvi_predict_for_items.csv");
 		
 		computeWeights();
-		computePredictions(10,"data/pred/mtvi_60d-rated-top10.csv");
+		computePredictions(10,"data/pred/mtvi_30d-rated-top10-12f.csv");
 		System.out.println("DONE");
 	}
 
@@ -129,6 +129,7 @@ public class ContentBasedRecommender {
 				//iterate features
 				double pred = 0.0;
 				int count = 0;
+				//System.out.println(i);
 				for(String f_i: features.get(i))
 				{
 					try{
@@ -265,26 +266,26 @@ public class ContentBasedRecommender {
 	{
 		System.out.println("loadItemFeaturesFromDBTable");
 		String sql = "SELECT [tv_id] as item \n"
-				+" CASE WHEN [channel_ID] = 0  THEN null ELSE ([channel_ID]) END as channelID\n"
-				+" CASE WHEN [category] = '' THEN null ELSE ([category]) END\n"
-				+" CASE WHEN [asset_id] = '' THEN null ELSE ([asset_id]) END\n"
-				+" CASE WHEN [series_id] = '' THEN null ELSE ([series_id]) END\n"
-				+" CONVERT(varchar(2),DATEPART(hh, [tv_start]))\n"
-				+" CONVERT(varchar(2),DATEPART(hh, [tv_end]))\n"
-				+" CASE WHEN [prodyear] = 0  THEN null ELSE ([prodyear]) END\n"
-				+" CASE WHEN [genres] = ''   THEN null ELSE ([genres]) END\n"
-				+" CASE WHEN [season] = 0    THEN null ELSE (CONVERT(varchar(20), [season])) END\n"
-				+" CASE WHEN [episode] = 0   THEN null ELSE (CONVERT(varchar(20),[episode])) END\n"
-				+" CASE WHEN [xprs_imdb_id] = ''    THEN null ELSE (CONVERT(varchar(20), [xprs_imdb_id])) END\n"
-				+" CASE WHEN [hd] = 0    THEN null ELSE (CONVERT(varchar(20), [hd])) END\n"
-				+" CASE WHEN [country] = ''    THEN null ELSE (CONVERT(varchar(20), [country])) END\n"
-				+" CASE WHEN [cast] = ''    THEN null ELSE (CONVERT(varchar(20), [cast])) END\n"
-				+" CASE WHEN [director] = ''    THEN null ELSE (CONVERT(varchar(20), [director])) END\n"
-				+" CASE WHEN [adult] = 0    THEN null ELSE (CONVERT(varchar(20), [adult])) END\n"
+				+" ,CASE WHEN [channel_ID] = 0  THEN null ELSE ([channel_ID]) END as channelID\n"
+				+" ,CASE WHEN [category] = '' THEN null ELSE ([category]) END\n"
+				+" ,CASE WHEN [asset_id] = '' THEN null ELSE ([asset_id]) END\n"
+				+" ,CASE WHEN [series_id] = '' THEN null ELSE ([series_id]) END\n"
+				+" ,CONVERT(varchar(2),DATEPART(hh, [tv_start]))\n"
+				+" ,CONVERT(varchar(2),DATEPART(hh, [tv_end]))\n"
+				+" ,CONVERT(varchar(2),DATEPART(dw, [tv_start]))\n"
+				+" ,CASE WHEN [prodyear] = 0  THEN null ELSE ([prodyear]) END\n"
+				+" ,CASE WHEN [genres] = ''   THEN null ELSE ([genres]) END\n"
+				+" ,CASE WHEN [season] = 0    THEN null ELSE (CONVERT(varchar(20), [season])) END\n"
+				+" ,CASE WHEN [episode] = 0   THEN null ELSE (CONVERT(varchar(20),[episode])) END\n"
+				+" ,CASE WHEN [xprs_imdb_id] = ''    THEN null ELSE (CONVERT(varchar(20), [xprs_imdb_id])) END\n"
+				+" ,CASE WHEN [hd] = 0    THEN null ELSE (CONVERT(varchar(20), [hd])) END\n"
+				+" ,CASE WHEN [country] = ''    THEN null ELSE (CONVERT(varchar(20), [country])) END\n"
+				+" ,CASE WHEN [cast] = ''    THEN null ELSE (CONVERT(varchar(20), [cast])) END\n"
+				+" ,CASE WHEN [director] = ''    THEN null ELSE (CONVERT(varchar(20), [director])) END\n"
+				+" ,CASE WHEN [adult] = 0    THEN null ELSE (CONVERT(varchar(20), [adult])) END\n"
 				+" FROM [Middleware].[dbo].[GALA_metras_TV_Programme] \n"
 				+" WHERE [tv_id] is not null;";
 		features = new TreeMap<Integer, ArrayList<String>>();
-
 		Connection conn = getDBConnection();
 		Statement sta = conn.createStatement();
 		String Sql = sql;
