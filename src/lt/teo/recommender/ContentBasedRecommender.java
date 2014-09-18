@@ -1,4 +1,4 @@
-package lt.teo.recommender.cb;
+package lt.teo.recommender;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

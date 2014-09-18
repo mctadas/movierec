@@ -1,4 +1,4 @@
-package lt.teo.recommender.cf;
+package lt.teo.recommender;
 
 import java.io.File;
 import java.nio.charset.Charset;
