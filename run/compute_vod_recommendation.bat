@@ -1,0 +1,2 @@
+java -XX:-UseGCOverheadLimit -Xms3072m -jar "\\srvfile\TeoShare\03_Technology_&_IT_Division\03-2_Information_Systems_Division\03-2-08_Data_Analytics_Systems_Team\Common\scripts\Recommender\cf_recommend.jar" 20 IPTV_VOD_rated_filtered_UAT IPTV_VOD_prediction_UAT dwh vF_V8N26jCfi jdbc:sqlserver://SRDWH\CAVS;databaseName=EPDM
+pause
