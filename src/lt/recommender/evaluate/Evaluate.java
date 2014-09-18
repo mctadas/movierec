@@ -14,6 +14,8 @@ public class Evaluate {
 		evaluate("data/pred/mtvi_30d-rated-top10.csv", "data/test/mtvi_30d-rated.csv");
 		evaluate("data/pred/mtvi_30d-rated-top10-normed.csv", "data/test/mtvi_30d-rated.csv");
 		evaluate("data/pred/mtvi_60d-rated-top10.csv", "data/test/mtvi_60d-rated.csv");
+		evaluate("data/pred/mtvi_30d-rated-top10-12f.csv", "data/test/mtvi_30d-rated.csv");
+		evaluate("data/pred/mtvi_60d-rated-top10-12f.csv", "data/test/mtvi_30d-rated.csv");
 		
 	}
 	

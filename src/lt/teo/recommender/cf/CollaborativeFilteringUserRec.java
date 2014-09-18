@@ -1,4 +1,4 @@
-package lt.teo.recommender.vod;
+package lt.teo.recommender.cf;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -26,27 +26,34 @@ import org.apache.mahout.cf.taste.similarity.UserSimilarity;
 
 public class CollaborativeFilteringUserRec {
 
+	public static String userName;
+	public static String password;
+	public static String db_url;
+	
 	public static void main(String[] args) throws Exception
 	{
 		String trainTable = null;
 		String predTable = null;
 		int topN = 0;
 
-		if (args.length <3) {
-			System.out.println("[USAGE]\n trainingTable destPredictionTable noOfPredictionsToCompute\n");
+		if (args.length < 5) {
+			System.out.println("[USAGE]\n noOfPredictionsToCompute trainingTable destPredictionTable DB_user DB_pass DB_url\n");
 			System.exit(-1);
 		} else {
-			trainTable = args[0]; //"IPTV_VOD_rated_filtered_UAT";
-			predTable =args[1]; //"IPTV_VOD_prediction_UAT";
-			topN = Integer.parseInt(args[2]); //50;
+			topN = Integer.parseInt(args[0]); //50;
+			trainTable = args[1]; //"IPTV_VOD_rated_filtered_UAT";
+			predTable =args[2]; //"IPTV_VOD_prediction_UAT";
+			userName = args[3];//"dwh"
+			password = args[4];//"vF_V8N26jCfi";
+			db_url = args[5];//"jdbc:sqlserver://SRDWH\\CAVS;databaseName=EPDM"
 		}
-
+		
 		Path tempFile = getTrainFileFromDBTable(trainTable);
 
 		recommend(tempFile.toString(), predTable, topN);
 
 		deleteFile(tempFile.toString());
-		System.exit(0);
+		System.out.println("DONE");
 	}
 
 	public static Path getTrainFileFromDBTable(String trainTable) throws Exception
@@ -113,13 +120,8 @@ public class CollaborativeFilteringUserRec {
 	
 	public static Connection getDBConnection() throws Exception
 	{
-		String userName = "dwh";
-		String password = "vF_V8N26jCfi";
-		
-		String db_url = "jdbc:sqlserver://SRDWH\\CAVS;databaseName=EPDM";
 		Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 		Connection conn = DriverManager.getConnection(db_url, userName, password);
-		
 		return conn;
 	}
 }

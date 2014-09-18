@@ -1,4 +1,4 @@
-package lt.teo.parser;
+package lt.recommender.evaluate;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
