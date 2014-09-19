@@ -1,4 +1,4 @@
-package lt.recommender.evaluate;
+package lt.teo.recommender.evaluate;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
