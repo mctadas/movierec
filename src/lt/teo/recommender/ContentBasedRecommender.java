@@ -161,7 +161,7 @@ public class ContentBasedRecommender {
 			{
 				// check if user saw this item
 				if(ratings.get(u).get(i)!=null) {
-					System.out.println("skip item "+i+" as it was seen by user "+u);
+					//System.out.println("skip item "+i+" as it was seen by user "+u);
 					continue;
 				}
 				
