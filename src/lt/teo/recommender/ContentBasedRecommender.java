@@ -17,9 +17,12 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -40,17 +43,20 @@ public class ContentBasedRecommender {
 	public static String itemTable;
 	public static String predTable;
 	public static int topN;
+	public static double degrade_coef = 0.0;
+	
 	
 	public static TreeMap<Integer, TreeMap<Integer, Double>> ratings; //<u,<i,r>>
 	public static TreeMap<Integer, ArrayList<String>> features; //<i,[j]>
 	public static TreeMap<Integer, TreeMap<String, Double>> weights; //<u,<j,w>>
 	public static TreeMap<Integer, TreeMap<Integer, Double>> predictions; // <u,<i,p>>
 	public static Set<Integer> itemsToPredict;
+	public static TreeMap<Integer, Integer> showTime; //<i,epoch_day>
 
 	public static void main(String[] args) throws Exception
 	{
-		if (args.length < 7) {
-			System.out.println("[USAGE]\n noOfPredictionsToCompute trainingTable featureTable itemTable destPredictionTable DB_user DB_pass DB_url\n");
+		if (args.length < 8) {
+			System.out.println("[USAGE]\n noOfPredictionsToCompute trainingTable featureTable itemTable destPredictionTable DB_user DB_pass DB_url degradeCoef\n");
 			System.exit(-1);
 		} else {
 			topN = Integer.parseInt(args[0]); //50;
@@ -61,6 +67,9 @@ public class ContentBasedRecommender {
 			userName = args[5];//"dwh"
 			password = args[6];//"vF_V8N26jCfi";
 			db_url = args[7];//"jdbc:sqlserver://SRDWH\\CAVS;databaseName=EPDM"
+		}
+		if(args.length>8) {
+			degrade_coef = Double.parseDouble(args[8]);
 		}
 		
 		loadItemFeaturesFromDBTable();
@@ -136,7 +145,8 @@ public class ContentBasedRecommender {
 	
 	private static void computePredictions() throws Exception{
 		System.out.println("computePredictions");
-		Connection conn = getDBConnection();		
+		Connection conn = getDBConnection();
+		Integer now = getEpochDays(getCurrentTimeStamp().toString());
 
 		int c = 0;
 		for(Map.Entry<Integer, TreeMap<String, Double>> w_u : weights.entrySet())
@@ -149,18 +159,31 @@ public class ContentBasedRecommender {
 
 			for(Integer i: itemsToPredict)
 			{
+				// check if user saw this item
+				if(ratings.get(u).get(i)!=null) {
+					System.out.println("skip item "+i+" as it was seen by user "+u);
+					continue;
+				}
+				
 				//iterate features
 				double pred = 0.0;
-				for(String f_i: features.get(i))
-				{
-					try{
-						pred += w_vector.get(f_i);
-					}catch(Exception e){
-						continue;
+				try{
+					for(String f_i: features.get(i))
+					{
+						try{
+							pred += w_vector.get(f_i);
+						}catch(Exception e){
+							continue;
+						}
 					}
-				}				
-				predicton_u.put(i, pred);
+				}catch(Exception e){
+					continue;
+				}
+				
+				double degrade = (degrade_coef/Math.max(1, Math.abs(showTime.get(i)-now)))+0.5;
+				predicton_u.put(i, pred*degrade);
 			}
+			
 			savePredictedValues(conn, predicton_u, u);
 		}
 		conn.close();
@@ -221,7 +244,7 @@ public class ContentBasedRecommender {
 		while (rs.next()) {
 			itemsToPredict.add(rs.getInt(1));
 		}
-		conn.close();
+		conn.close();		
 	}
 	
 	private static Map<Integer, Double> sortByComparator(TreeMap<Integer, Double> unsortMap) {
@@ -274,6 +297,7 @@ public class ContentBasedRecommender {
 	private static void loadItemFeaturesFromDBTable() throws Exception
 	{
 		features = new TreeMap<Integer, ArrayList<String>>();
+		showTime = new TreeMap<Integer, Integer>();
 		
 		Connection conn = getDBConnection();
 		Statement sta = conn.createStatement();
@@ -285,7 +309,10 @@ public class ContentBasedRecommender {
 
 		while (rs.next()) {
 			Integer i = rs.getInt(1);
-			for(int e=2; e<=columnCount;e++){
+			Integer day = getEpochDays(rs.getString(2));
+			showTime.put(i, day);
+			
+			for(int e=3; e<=columnCount;e++){
 				String str = rs.getString(e);
 				if(str != null){
 					for(String val: str.split(",")) {
@@ -377,4 +404,14 @@ public class ContentBasedRecommender {
 		return new java.sql.Timestamp(today.getTime());
 	}
 
+	private static Integer getEpochDays(String datetime) throws ParseException {
+		SimpleDateFormat sdf  = new SimpleDateFormat("yyyy-MM-dd kk:mm:ss.SSS");
+		Date date = sdf.parse(datetime);
+		long timeInMillisSinceEpoch = date.getTime(); 
+		//long timeInMinutesSinceEpoch = timeInMillisSinceEpoch / (60 * 1000);
+		//long timeInHoursSinceEpoch = timeInMillisSinceEpoch / (60 * 60 * 1000);
+		long timeInDaysSinceEpoch = timeInMillisSinceEpoch / (24 * 60 * 60 * 1000);
+		
+		return (int) (long) timeInDaysSinceEpoch;
+	}
 }
